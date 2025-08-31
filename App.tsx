@@ -6,8 +6,10 @@ import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { generateDecadeImage } from './services/geminiService';
 import PolaroidCard from './components/PolaroidCard';
+import ShareModal from './components/ShareModal';
 import { createAlbumPage } from './lib/albumUtils';
 import Footer from './components/Footer';
+import AgodaLogo from './components/AgodaLogo';
 
 const DECADES = ['1950s', '1960s', '1970s', '1980s', '1990s', '2000s'];
 
@@ -38,7 +40,15 @@ interface GeneratedImage {
     error?: string;
 }
 
+type ShareContent = {
+    type: 'image' | 'album';
+    decade?: string;
+    imageUrl?: string;
+    albumImages?: Record<string, string>;
+}
+
 const primaryButtonClasses = "font-semibold text-lg text-center text-white bg-[#5392F9] py-3 px-8 rounded-lg transform transition-all duration-300 hover:scale-105 hover:bg-[#4382f7] shadow-md disabled:opacity-50 disabled:cursor-not-allowed";
+const shareButtonClasses = "font-semibold text-lg text-center text-white bg-green-500 py-3 px-8 rounded-lg transform transition-all duration-300 hover:scale-105 hover:bg-green-600 shadow-md";
 const secondaryButtonClasses = "font-semibold text-lg text-center text-[#5392F9] bg-transparent border-2 border-[#5392F9] py-3 px-8 rounded-lg transform transition-all duration-300 hover:scale-105 hover:bg-[#5392F9]/10";
 
 const useMediaQuery = (query: string) => {
@@ -61,6 +71,9 @@ function App() {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isDownloading, setIsDownloading] = useState<boolean>(false);
     const [appState, setAppState] = useState<'idle' | 'image-uploaded' | 'generating' | 'results-shown'>('idle');
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [shareContent, setShareContent] = useState<ShareContent | null>(null);
+
     const dragAreaRef = useRef<HTMLDivElement>(null);
     const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -178,6 +191,38 @@ function App() {
         }
     };
 
+    const handleShareImage = (decade: string) => {
+        const image = generatedImages[decade];
+        if (image?.status === 'done' && image.url) {
+            setShareContent({
+                type: 'image',
+                decade: decade,
+                imageUrl: image.url
+            });
+            setIsShareModalOpen(true);
+        }
+    };
+    
+    const handleShareAlbum = () => {
+        const imageData = Object.entries(generatedImages)
+            .filter(([, image]) => image.status === 'done' && image.url)
+            .reduce((acc, [decade, image]) => {
+                acc[decade] = image!.url!;
+                return acc;
+            }, {} as Record<string, string>);
+    
+        if (Object.keys(imageData).length === 0) {
+            alert("No images are available to share yet!");
+            return;
+        }
+    
+        setShareContent({
+            type: 'album',
+            albumImages: imageData
+        });
+        setIsShareModalOpen(true);
+    };
+
     const handleDownloadAlbum = async () => {
         setIsDownloading(true);
         try {
@@ -188,8 +233,9 @@ function App() {
                     return acc;
                 }, {} as Record<string, string>);
 
-            if (Object.keys(imageData).length < DECADES.length) {
-                alert("Please wait for all images to finish generating before downloading the album.");
+            if (Object.keys(imageData).length < 1) {
+                alert("Please wait for images to finish generating before downloading the album.");
+                setIsDownloading(false);
                 return;
             }
 
@@ -212,18 +258,19 @@ function App() {
 
     return (
         <main className="bg-gray-100 text-gray-800 min-h-screen w-full flex flex-col items-center justify-center p-4 pb-24 overflow-hidden relative">
+             <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                shareContent={shareContent}
+            />
             <div className="z-10 flex flex-col items-center justify-center w-full h-full flex-1 min-h-0">
                 <div className="text-center mb-10">
-                    <div className="flex items-center justify-center gap-2 text-6xl md:text-8xl font-bold text-gray-800 tracking-tight">
-                        <div className="flex text-4xl md:text-5xl">
-                            <span className="text-[#F8A441]">●</span>
-                            <span className="text-[#8A42F4] -ml-[1.1rem] md:-ml-5">●</span>
-                            <span className="text-[#5392F9] -ml-[1.1rem] md:-ml-5">●</span>
-                        </div>
-                        <h1 className="leading-tight">Past Forward</h1>
+                    <AgodaLogo className="h-12 md:h-16 mx-auto mb-6" />
+                    <div className="flex items-center justify-center gap-4 text-4xl md:text-6xl font-black text-gray-800 tracking-tight">
+                        <h1 className="leading-tight">Marketing Time Machine</h1>
                     </div>
-                    <p className="text-gray-500 mt-2 text-lg md:text-xl">
-                        Your ultimate time-travel trip, powered by <span className="font-semibold text-[#5392F9]">Agoda</span>.
+                    <p className="text-gray-500 mt-3 text-lg md:text-xl">
+                        A special project by the <span className="font-semibold text-[#5392F9]">Agoda</span> Team.
                     </p>
                 </div>
 
@@ -298,6 +345,7 @@ function App() {
                                             error={generatedImages[decade]?.error}
                                             onShake={handleRegenerateDecade}
                                             onDownload={handleDownloadIndividualImage}
+                                            onShare={handleShareImage}
                                             isMobile={isMobile}
                                         />
                                     </div>
@@ -329,6 +377,7 @@ function App() {
                                                 error={generatedImages[decade]?.error}
                                                 onShake={handleRegenerateDecade}
                                                 onDownload={handleDownloadIndividualImage}
+                                                onShare={handleShareImage}
                                                 isMobile={isMobile}
                                             />
                                         </motion.div>
@@ -345,6 +394,9 @@ function App() {
                                         className={primaryButtonClasses}
                                     >
                                         {isDownloading ? 'Creating Album...' : 'Download Album'}
+                                    </button>
+                                     <button onClick={handleShareAlbum} className={shareButtonClasses}>
+                                        Share Album
                                     </button>
                                     <button onClick={handleReset} className={secondaryButtonClasses}>
                                         Start Over

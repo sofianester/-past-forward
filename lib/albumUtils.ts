@@ -40,10 +40,10 @@ export async function createAlbumPage(imageData: Record<string, string>): Promis
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
 
-    ctx.font = `bold 100px 'Poppins', sans-serif`;
+    ctx.font = `bold 100px 'Nunito', sans-serif`;
     ctx.fillText('My Time-Travel Trip', canvasWidth / 2, 150);
 
-    ctx.font = `50px 'Poppins', sans-serif`;
+    ctx.font = `50px 'Nunito', sans-serif`;
     ctx.fillStyle = '#555';
     ctx.fillText('with Agoda & Gemini', canvasWidth / 2, 220);
 
@@ -137,7 +137,7 @@ export async function createAlbumPage(imageData: Record<string, string>): Promis
         
         // Draw the handwritten caption
         ctx.fillStyle = '#222';
-        ctx.font = `60px 'Poppins', sans-serif`;
+        ctx.font = `60px 'Nunito', sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 

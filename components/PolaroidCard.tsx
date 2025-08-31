@@ -17,6 +17,7 @@ interface PolaroidCardProps {
     dragConstraintsRef?: React.RefObject<HTMLElement>;
     onShake?: (caption: string) => void;
     onDownload?: (caption: string) => void;
+    onShare?: (caption: string) => void;
     isMobile?: boolean;
 }
 
@@ -46,8 +47,14 @@ const Placeholder = () => (
     </div>
 );
 
+const ShareIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+    </svg>
+);
 
-const PolaroidCard: React.FC<PolaroidCardProps> = ({ imageUrl, caption, status, error, dragConstraintsRef, onShake, onDownload, isMobile }) => {
+
+const PolaroidCard: React.FC<PolaroidCardProps> = ({ imageUrl, caption, status, error, dragConstraintsRef, onShake, onDownload, onShare, isMobile }) => {
     const [isDeveloped, setIsDeveloped] = useState(false);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const lastShakeTime = useRef(0);
@@ -115,6 +122,18 @@ const PolaroidCard: React.FC<PolaroidCardProps> = ({ imageUrl, caption, status, 
                             "absolute top-2 right-2 z-20 flex flex-col gap-2 transition-opacity duration-300",
                             !isMobile && "opacity-0 group-hover:opacity-100",
                         )}>
+                            {onShare && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent drag from starting on click
+                                        onShare(caption);
+                                    }}
+                                    className="p-2 bg-black/50 rounded-full text-white hover:bg-black/75 focus:outline-none focus:ring-2 focus:ring-white"
+                                    aria-label={`Share image for ${caption}`}
+                                >
+                                    <ShareIcon />
+                                </button>
+                            )}
                             {onDownload && (
                                 <button
                                     onClick={(e) => {
